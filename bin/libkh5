@@ -493,6 +493,114 @@ kh_msg()
     fi
 }
 
+## Custom logging with auto-clear of previous message
+# Same args as kh_msg, but clears previous message first
+# Arg 1 is logging message
+# Arg 2 is logging level
+# Arg 3 is eips/fbink logging status (quiet|verbose|auto)
+# Arg 4 is eips/fbink message
+##
+kh_msg_replace()
+{
+    # We need at least two args
+    if [ $# -lt 2 ] ; then
+        f_log W ${KH_HACKNAME} libkh5 "" "not enough arguments passed to kh_msg_replace ($# while we need at least 2)"
+        return
+    fi
+
+    kh_msg_string="${1}"
+    kh_loglvl="${2}"
+
+    # Check if we want to trigger an additionnal eips print
+    case "${3}" in
+        "q" | "Q" )
+            kh_show_eips="false"
+        ;;
+        "v" | "V" )
+            kh_show_eips="true"
+        ;;
+        * )
+            # Only show if we find the verbose trigger file for this hack
+            if [ -f "${KH_HACK_BASEDIR}/verbose" ] ; then
+                kh_show_eips="true"
+            else
+                kh_show_eips="false"
+            fi
+        ;;
+    esac
+
+    # If we have a fourth argument, use it as a specific string to pass to eips, else use the same as f_log
+    if [ -n "${4}" ] ; then
+        kh_eips_string="${4}"
+    else
+        kh_eips_string="${kh_msg_string}"
+    fi
+
+    # Print to log
+    f_log ${kh_loglvl} ${KH_HACKNAME} kh_msg "" "${kh_msg_string}"
+
+    # Do we want to trigger an eips print?
+    if [ "${kh_show_eips}" == "true" ] ; then
+        # FIRST: Clear previous messages
+        if kh_has_fbink ; then
+            ${FBINK_BIN} -qpmhL -y -4 " " " " " " " "
+            fbink_prev_line_offset="0"
+        else
+            # Clear the bottom lines where kh_eips_print writes
+            kh_blank_line=""
+            while [ ${#kh_blank_line} -lt ${EIPS_MAXCHARS} ] ; do
+                kh_blank_line="${kh_blank_line} "
+            done
+            
+            eips 0 $((${EIPS_MAXLINES} - 2)) "${kh_blank_line}" >/dev/null
+            eips 0 $((${EIPS_MAXLINES} - 3)) "${kh_blank_line}" >/dev/null
+            eips 0 $((${EIPS_MAXLINES} - 4)) "${kh_blank_line}" >/dev/null
+            eips 0 $((${EIPS_MAXLINES} - 5)) "${kh_blank_line}" >/dev/null
+            kh_prev_line_offset="0"
+        fi
+
+        # THEN: Show new message (same as kh_msg)
+        # Detect from which hack we've been called, we'll use it to tag our message
+        case "${KH_HACKNAME}" in
+            "linkss" )
+                kh_eips_tag="S"
+            ;;
+            "linkfonts" )
+                kh_eips_tag="F"
+            ;;
+            "usbnet" )
+                kh_eips_tag="N"
+            ;;
+            "linkjail" )
+                kh_eips_tag="J"
+            ;;
+            "screensaver" )
+                kh_eips_tag="SS"
+            ;;
+            * )
+                # Huh, shouldn't happen, but log it anyway.
+                f_log W ${KH_HACKNAME} libkh5 "" "couldn't detect which eips tag to use for hack '${KH_HACKNAME}'"
+                kh_eips_tag="U"
+            ;;
+        esac
+
+        # If loglevel is anything else than I, add it to our tag
+        if [ "${kh_loglvl}" != "I" ] ; then
+            kh_eips_tag="${kh_eips_tag} ${kh_loglvl}"
+        fi
+
+        # Tag our message
+        kh_eips_string="${kh_eips_tag} ${kh_eips_string}"
+
+        # Can we use FBInk?
+        if kh_has_fbink ; then
+            kh_fbink_print "${kh_eips_string}"
+        else
+            kh_eips_print "${kh_eips_string}"
+        fi
+    fi
+}
+
 ## Fatal error logging
 kh_die()
 {
