@@ -1,0 +1,45 @@
+{
+  "items": [
+    {
+      "name": "Screensaver Manager",
+      "priority": 0,
+      "items": [
+        {
+          "name": "Process Images",
+          "priority": 1,
+          "action": "./bin/process.sh",
+          "exitmenu": false,
+          "status": false
+        },
+        {
+          "name": "Apply Screensavers (Swipe Unlock Mode)",
+          "priority": 2,
+          "action": "./bin/apply_su.sh",
+          "exitmenu": false,
+          "status": false
+        },
+        {
+          "name": "Apply Screensavers (Book Cover Mode)",
+          "priority": 3,
+          "action": "./bin/apply_bc.sh",
+          "exitmenu": false,
+          "status": false
+        },
+        {
+          "name": "Restore",
+          "priority": 3,
+          "action": "./bin/restore.sh",
+          "exitmenu": false,
+          "status": false
+        },
+        {
+          "name": "Status",
+          "priority": 4,
+          "action": "./bin/status.sh",
+          "exitmenu": false,
+          "status": false
+        }
+      ]
+    }
+  ]
+}
