@@ -1,6 +1,17 @@
 #!/bin/sh
 # Apply converted screensavers (book cover mode/non-ad mode)
 
+# TODO:
+#   - display printing to screen
+#   - combine convert into the apply scripts
+#   - book cover toggle/switch between cover and custom wallpapers
+#   - active screen vs locked screen (ad mode specific)
+#   - toggle transparent screen (no screensavers)
+#   - book covers on ad-mode/swipe to unlock screen
+#   - bin install package
+#   - unlocking on ad, scrolls in home page
+#   - minimise the extra assets and admgr.json entry content
+
 OUTPUT_DIR="/mnt/us/.screensavers_converted"
 BACKUP_DIR="/usr/share/blanket/screensaver_bkp"
 DEST_DIR="/usr/share/blanket/screensaver"
