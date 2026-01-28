@@ -4,6 +4,7 @@
 OUTPUT_DIR="/mnt/us/.screensavers_converted"
 BACKUP_DIR="/usr/share/blanket/screensaver_bkp"
 DEST_DIR="/usr/share/blanket/screensaver"
+FLAG_FILE="/mnt/us/extensions/screensaver/.mode_flag"
 
 # Check if blanket screensaver folder exists
 if [ ! -d "$DEST_DIR" ]; then
@@ -14,19 +15,16 @@ fi
 
 # Check for converted images
 if [ ! -d "$OUTPUT_DIR" ] || [ -z "$(ls -A "$OUTPUT_DIR" 2>/dev/null)" ]; then
-    echo "No converted images!"
+    echo "No convert images!"
     echo "Run 'Convert Images' first"
     exit 1
 fi
 
-# Backup if needed
+# Backup default screensavers (only if backup doesn't exist)
 if [ ! -d "$BACKUP_DIR" ] || [ -z "$(ls -A "$BACKUP_DIR" 2>/dev/null)" ]; then
-    echo "Backing up originals..."
+    echo "Backing up original screensavers (first time)..."
     mkdir -p "$BACKUP_DIR"
-    mntroot rw 2>/dev/null
     cp -p "$DEST_DIR"/* "$BACKUP_DIR/" 2>/dev/null
-else
-    mntroot rw 2>/dev/null
 fi
 
 # TODO: Should we do a reboot or unload of screensaver as we are removing existing screensavers,
@@ -55,29 +53,40 @@ echo "Checking ad-mode..."
 DB="/var/local/appreg.db"
 STATE=$(sqlite3 "$DB" 'select value from properties where name = "adunit.viewable";')
 
+NEEDS_REBOOT=false
+
 if [ "$STATE" = "true" ]; then
     # Unlock
     chattr -i "$ADUNITS_DIR/admgr.json" 2>/dev/null
     chattr -i "$ADUNITS_DIR" 2>/dev/null
 
-    # Backup ads 
-    echo "Ads are currently ENABLED."
-    echo "Backing up ads"
-    mv /var/local/adunits /var/local/adunits_bkp/
-    mv /mnt/us/system/.assets /mnt/us/system/.assets_bkp/
+    # Backup ads (only if backup doesn't exist)
+    if [ ! -d "/var/local/adunits_bkp" ]; then
+        echo "Ads are currently ENABLED."
+        echo "Backing up original ads (first time)..."
+        mv /var/local/adunits /var/local/adunits_bkp/ 2>/dev/null
+        mv /mnt/us/system/.assets /mnt/us/system/.assets_bkp/ 2>/dev/null
+    else
+        echo "Ads are currently ENABLED."
+        echo "Ad backup already exists, removing current ads..."
+        rm -rf /var/local/adunits 2>/dev/null
+        rm -rf /mnt/us/system/.assets 2>/dev/null
+    fi
+
     echo "Updating appreg.db..."
     sqlite3 "$DB" 'update properties set value = "false" where name = "adunit.viewable";'
+    NEEDS_REBOOT=true
+fi
 
-    mntroot ro 2>/dev/null
-    echo "Ads disabled and backed up. Rebooting in 5 seconds..."
-    sleep 5
+echo "default" > "$FLAG_FILE"
+
+mntroot ro 2>/dev/null
+
+# Reboot if we changed ad state
+if [ "$STATE" = "true" ]; then
+    echo "Ads disabled and backed up. Rebooting..."
+    sleep 2
     reboot
-# else
-#     echo "Ads are currently DISABLED."
-#     echo "Re-enabling ads..."
-#     sqlite3 "$DB" 'update properties set value = "true" where name = "adunit.viewable";'
-#     echo "Ads enabled. Rebooting in 5 seconds..."
-#     sleep 5
-#     reboot
-    mntroot ro 2>/dev/null
+else
+    echo "Complete! Sleep/wake to see screensavers."
 fi

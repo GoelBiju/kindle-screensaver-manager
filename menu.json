@@ -5,9 +5,9 @@
       "priority": 0,
       "items": [
         {
-          "name": "Process Images",
+          "name": "Convert Images",
           "priority": 1,
-          "action": "./bin/process.sh",
+          "action": "./bin/convert.sh",
           "exitmenu": false,
           "status": false
         },
