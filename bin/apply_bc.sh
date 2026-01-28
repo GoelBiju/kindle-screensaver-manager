@@ -12,6 +12,26 @@
 #   - unlocking on ad, scrolls in home page
 #   - minimise the extra assets and admgr.json entry content
 
+# Set hack name for libkh5
+KH_HACKNAME="screensaver"
+
+# Source libkh5
+_KH_FUNCS="/mnt/us/extensions/${KH_HACKNAME}/bin/libkh5"
+if [ -f ${_KH_FUNCS} ] ; then
+    . ${_KH_FUNCS}
+else
+    # Fallback if libkh5 not found
+    kh_msg() { echo "$1"; }
+fi
+
+kh_msg "Test message!" I v
+
+sleep 3
+
+kh_msg "Another test message!" I v
+
+exit 0
+
 OUTPUT_DIR="/mnt/us/.screensavers_converted"
 BACKUP_DIR="/usr/share/blanket/screensaver_bkp"
 DEST_DIR="/usr/share/blanket/screensaver"
