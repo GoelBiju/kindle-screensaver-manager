@@ -2,6 +2,23 @@
 
 A KUAL extension for managing custom screensavers on your jailbroken Kindle. Tested on Kindle Basic 4 (KT4) on firmware version `5.18.1`.
 
+## Features
+
+...
+
+## TODOs
+
+- [ ] display printing to screen
+- [ ] combine convert into the apply scripts
+- [ ] book cover toggle/switch between cover and custom wallpapers
+- [ ] active screen vs locked screen (ad mode specific)
+- [ ] bin install package
+- [ ] toggle transparent screen (no screensavers)
+- [ ] book covers on ad-mode/swipe to unlock screen
+- [ ] unlocking on ad, scrolls in home page
+- [ ] minimise the extra assets and admgr.json entry content
+- [ ] add functionality to handle different kindle screen sizes (eips)
+
 ## Installation
 
 1. **Add required binaries:**
@@ -73,12 +90,6 @@ Not yet supported:
 
 - Ensure ffmpeg is in `bin/ffmpeg`
 - Make it executable: `chmod +x bin/ffmpeg`
-
-**"fbink missing" or blank screen:**
-
-- Download FBInk from the link above
-- Place in `bin/fbink`
-- Make it executable: `chmod +x bin/fbink`
 
 **No images found:**
 
