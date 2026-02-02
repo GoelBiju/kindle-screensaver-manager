@@ -42,21 +42,26 @@ A KUAL extension for managing custom screensavers on your jailbroken Kindle. Tes
 
 4. **Launch KUAL:**
    - Open KUAL on your Kindle
-   - You'll see "Screensaver Manager" in the menu
+   - You'll see "Screensaver Manager" in the menu.
 
 ## Usage
 
 1. **Add images:**
    - Copy your images (jpg, png, etc.) to `/mnt/us/screensavers/`
 
-2. **Convert & Apply:**
+2. **Apply mode**
    - Open KUAL
    - Navigate to "Screensaver Manager"
-   - Select "Convert & Apply"
+   - Select the mode you want and "Apply"!
 
 3. **View screensavers:**
    - Put Kindle to sleep
    - Wake to see your custom screensavers!
+
+4. **Restore:**
+   - Open KUAL
+   - Navigate to "Screensaver Manager"
+   - Select "Restore" to go back to your default settings.
 
 ## Menu Options
 
@@ -75,14 +80,7 @@ Edit the variables at the top of each script to customize:
 
 ## Supported Resolutions
 
-- Kindle Basic (KT4): 600x800
-
-Not yet supported:
-
-- Kindle Paperwhite 3: 758x1024
-- Kindle Paperwhite 4/5: 1072x1448
-- Kindle Oasis: 1264x1680
-- Kindle Scribe: 1860x2480
+The script _should_ support all Kindle resolutions via `eips` or backup detection methods.
 
 ## Requirements
 
@@ -106,3 +104,7 @@ Not yet supported:
 
 - Ensure `mntroot` command is available
 - Ensure you have a jailbroken kindle as you root access
+
+## Credits
+
+- [Marek Veselý](https://github.com/notmarek) - `notmarek` for the `libkh5` package
