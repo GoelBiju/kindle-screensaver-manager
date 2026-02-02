@@ -115,4 +115,5 @@ if [ "$NEEDS_REBOOT" = "true" ]; then
     reboot
 else
     echo "Restore complete!"
+    exit 0
 fi

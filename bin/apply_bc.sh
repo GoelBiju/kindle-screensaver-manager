@@ -1,6 +1,7 @@
 #!/bin/sh
 # Apply converted screensavers (book cover mode/non-ad mode)
 
+SCRIPT_DIR="/mnt/us/extensions/screensaver/bin"
 OUTPUT_DIR="/mnt/us/.screensavers_converted"
 BACKUP_DIR="/usr/share/blanket/screensaver_bkp"
 DEST_DIR="/usr/share/blanket/screensaver"
@@ -13,8 +14,12 @@ if [ ! -d "$DEST_DIR" ]; then
     exit 1
 fi
 
+# Run conversion
+echo "Converting images..."
+"$SCRIPT_DIR/convert.sh"
+
 # Check for converted images
-if [ ! -d "$OUTPUT_DIR" ] || [ -z "$(ls -A "$OUTPUT_DIR" 2>/dev/null)" ]; then
+if [ $? -ne 0 ] || [ ! -d "$OUTPUT_DIR" ] || [ -z "$(ls -A "$OUTPUT_DIR" 2>/dev/null)" ]; then
     echo "No convert images!"
     echo "Run 'Convert Images' first"
     exit 1
@@ -78,6 +83,7 @@ if [ "$STATE" = "true" ]; then
     NEEDS_REBOOT=true
 fi
 
+# Set mode flag
 echo "default" > "$FLAG_FILE"
 
 mntroot ro 2>/dev/null
@@ -89,4 +95,5 @@ if [ "$STATE" = "true" ]; then
     reboot
 else
     echo "Complete! Sleep/wake to see screensavers."
+    exit 0
 fi

@@ -5,22 +5,15 @@
       "priority": 0,
       "items": [
         {
-          "name": "Convert Images",
-          "priority": 1,
-          "action": "./bin/convert.sh",
-          "exitmenu": false,
-          "status": false
-        },
-        {
           "name": "Apply Screensavers (Swipe Unlock Mode)",
-          "priority": 2,
+          "priority": 1,
           "action": "./bin/apply_su.sh",
           "exitmenu": false,
           "status": false
         },
         {
           "name": "Apply Screensavers (Book Cover Mode)",
-          "priority": 3,
+          "priority": 2,
           "action": "./bin/apply_bc.sh",
           "exitmenu": false,
           "status": false

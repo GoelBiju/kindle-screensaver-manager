@@ -1,14 +1,48 @@
 #!/bin/sh
 # Apply converted screensavers (swipe to unlock/ad mode)
 
+SCRIPT_DIR="/mnt/us/extensions/screensaver/bin"
 OUTPUT_DIR="/mnt/us/.screensavers_converted"
 ASSETS_DIR="/mnt/us/system/.assets"
 ADUNITS_DIR="/var/local/adunits"
 RESOURCES_DIR="/mnt/us/extensions/screensaver/resources"
 FLAG_FILE="/mnt/us/extensions/screensaver/.mode_flag"
+DB="/var/local/appreg.db"
+
+# Check if ad system exists on this Kindle
+echo "Checking for ad system..."
+
+# Check for ad database
+if [ ! -f "$DB" ]; then
+    echo "ERROR: appreg.db not found!"
+    echo "Ad system not available on this Kindle"
+    exit 1
+fi
+
+# Check if adunit.viewable property exists in database
+AD_PROPERTY=$(sqlite3 "$DB" 'select value from properties where name = "adunit.viewable";' 2>/dev/null)
+if [ -z "$AD_PROPERTY" ]; then
+    echo "ERROR: Ad system not available!"
+    echo "This Kindle does not support ad-mode"
+    echo "Use 'Apply (Default Mode)' instead"
+    exit 1
+fi
+
+# Check if /var/local/adunits path exists (or can be created)
+if [ ! -d "/var/local/adunits" ] && [ ! -d "/var/local/adunits_bkp" ]; then
+    echo "ERROR: /var/local/adunits never existed!"
+    echo "Ad system not available on this Kindle"
+    echo "Use 'Apply (Default Mode)' instead"
+    exit 1
+fi
+
+
+# Run conversion
+echo "Converting images..."
+"$SCRIPT_DIR/convert.sh"
 
 # Check for converted images
-if [ ! -d "$OUTPUT_DIR" ] || [ -z "$(ls -A "$OUTPUT_DIR" 2>/dev/null)" ]; then
+if [ $? -ne 0 ] || [ ! -d "$OUTPUT_DIR" ] || [ -z "$(ls -A "$OUTPUT_DIR" 2>/dev/null)" ]; then
     echo "No converted images!"
     echo "Run 'Convert Images' first"
     exit 1
@@ -49,7 +83,7 @@ for IMAGE in "$OUTPUT_DIR"/bg_ss*.png; do
         FILENAME=$(basename "$IMAGE")
 
         # Make a new asset file
-        mkdir "$ASSETS_DIR/$COUNT"
+        mkdir -p "$ASSETS_DIR/$COUNT"
 
         cp "$IMAGE" "$ASSETS_DIR/$COUNT/screensvr.png" 2>/dev/null
         cp "$IMAGE" "$ASSETS_DIR/$COUNT/screensvr_active.png" 2>/dev/null
@@ -192,7 +226,6 @@ echo "Installed: $COUNT images"
 
 # Ensure we enter ad-mode on reboot
 echo "Enabling ad-mode..."
-DB="/var/local/appreg.db"
 sqlite3 "$DB" 'update properties set value = "true" where name = "adunit.viewable";'
 
 # Set ad-mode flag

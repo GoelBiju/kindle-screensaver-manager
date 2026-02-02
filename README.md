@@ -1,4 +1,4 @@
-# Kindle Screensaver Manager - KUAL Extension
+# Kindle Screensaver Manager
 
 A KUAL extension for managing custom screensavers on your jailbroken Kindle. Tested on Kindle Basic 4 (KT4) on firmware version `5.18.1`.
 
@@ -6,18 +6,24 @@ A KUAL extension for managing custom screensavers on your jailbroken Kindle. Tes
 
 ...
 
+- "Swipe to Unlock" your Kindle mode
+- Change default screensavers
+- Add multiple rotating screensavers
+
 ## TODOs
 
+- [x] combine convert into the apply scripts
+- [ ] add functionality to handle different kindle screen sizes (eips)
+- [ ] toggle transparent screen (no screensavers)
 - [ ] display printing to screen
-- [ ] combine convert into the apply scripts
 - [ ] book cover toggle/switch between cover and custom wallpapers
 - [ ] active screen vs locked screen (ad mode specific)
-- [ ] bin install package
-- [ ] toggle transparent screen (no screensavers)
+- [ ] bin install package for easy installation via MRPI
 - [ ] book covers on ad-mode/swipe to unlock screen
-- [ ] unlocking on ad, scrolls in home page
+- [ ] fix unlocking on ad, scrolls in home page bug
 - [ ] minimise the extra assets and admgr.json entry content
-- [ ] add functionality to handle different kindle screen sizes (eips)
+
+- [ ] build a smaller version of ffmpeg or use Imagick/convert instead
 
 ## Installation
 
