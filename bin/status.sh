@@ -28,7 +28,7 @@ SCREEN_INFO=$(eips -i 2>/dev/null)
 
 # Extract dimensions
 KINDLE_WIDTH=$(echo "$SCREEN_INFO" | grep "xres:" | awk '{print $2}')
-KINDLE_HEIGHT=$(echo "$SCREEN_INFO" | grep "yres:" | awk '{print $2}')
+KINDLE_HEIGHT=$(echo "$SCREEN_INFO" | grep "yres:" | awk '{print $4}')
 
 # Fallback to default if extraction fails
 KINDLE_WIDTH=${KINDLE_WIDTH:-600}

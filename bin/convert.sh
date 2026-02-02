@@ -16,7 +16,7 @@ echo "Detecting screen resolution..."
 SCREEN_INFO=$(eips -i 2>/dev/null)
 if [ -n "$SCREEN_INFO" ]; then
     KINDLE_WIDTH=$(echo "$SCREEN_INFO" | grep "xres:" | awk '{print $2}')
-    KINDLE_HEIGHT=$(echo "$SCREEN_INFO" | grep "yres:" | awk '{print $2}')
+    KINDLE_HEIGHT=$(echo "$SCREEN_INFO" | grep "yres:" | awk '{print $4}')
 fi
 
 # Fallback to model detection if eips failed
