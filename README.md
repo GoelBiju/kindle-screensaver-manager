@@ -13,7 +13,9 @@ A KUAL extension for managing custom screensavers on your jailbroken Kindle. Tes
 ## TODOs
 
 - [x] combine convert into the apply scripts
-- [ ] add functionality to handle different kindle screen sizes (eips)
+- [ ] build and package a smaller version of FFmpeg or Imagick/"convert" binary
+- [ ] add functionality to handle different kindle screen sizes automatically (eips)
+- [ ] add Kindle device compatibility list; gather various Kindle types and firmwares into a table
 - [ ] toggle transparent screen (no screensavers)
 - [ ] display printing to screen
 - [ ] book cover toggle/switch between cover and custom wallpapers
@@ -23,7 +25,6 @@ A KUAL extension for managing custom screensavers on your jailbroken Kindle. Tes
 - [ ] fix unlocking on ad, scrolls in home page bug
 - [ ] minimise the extra assets and admgr.json entry content
 
-- [ ] build a smaller version of ffmpeg or use Imagick/convert instead
 
 ## Installation
 
