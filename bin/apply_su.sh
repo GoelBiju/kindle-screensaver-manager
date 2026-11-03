@@ -68,6 +68,25 @@ mkdir -p "$ASSETS_DIR"
 # Process the screensavers and convert into assets and ad entries
 msg "Processing screensavers..."
 COUNT=0
+
+# Read width/height from a PNG's IHDR chunk ("IHDR" at byte 12, then
+# big-endian width and height). Prints "W H", or nothing if not a PNG.
+png_size()
+{
+    od -An -tu1 -j12 -N12 "$1" 2>/dev/null | awk '
+        { for (i = 1; i <= NF; i++) b[n++] = $i }
+        END {
+            if (n != 12 || b[0] != 73 || b[1] != 72 || b[2] != 68 || b[3] != 82) exit
+            printf "%d %d", b[4]*16777216 + b[5]*65536 + b[6]*256 + b[7], b[8]*16777216 + b[9]*65536 + b[10]*256 + b[11]
+        }'
+}
+
+# Fallback size if a header can't be read: the screen, then the KT4 default
+SCREEN_INFO=$(eips -i 2>/dev/null)
+FALLBACK_W=$(echo "$SCREEN_INFO" | grep "xres:" | awk '{print $2}')
+FALLBACK_H=$(echo "$SCREEN_INFO" | grep "yres:" | awk '{print $4}')
+FALLBACK_W=${FALLBACK_W:-600}
+FALLBACK_H=${FALLBACK_H:-800}
 AD_JSON_ENTRIES=""
 
 for IMAGE in "$OUTPUT_DIR"/bg_ss*.png; do
@@ -90,6 +109,16 @@ for IMAGE in "$OUTPUT_DIR"/bg_ss*.png; do
         # Calculate the MD5 checksum for the image
         MD5=$(md5sum "$IMAGE" | awk '{print $1}')
 
+        # Full-screen ad area matching the converted image
+        IMG_SIZE=$(png_size "$IMAGE")
+        IMG_W=${IMG_SIZE% *}
+        IMG_H=${IMG_SIZE#* }
+        if [ -z "$IMG_SIZE" ] || [ "$IMG_W" -le 0 ] 2>/dev/null || [ "$IMG_H" -le 0 ] 2>/dev/null; then
+            warn "Couldn't read size of $FILENAME, using ${FALLBACK_W}x${FALLBACK_H}"
+            IMG_W=$FALLBACK_W
+            IMG_H=$FALLBACK_H
+        fi
+
         # Build JSON entry for this ad
         if [ $COUNT -gt 0 ]; then
             AD_JSON_ENTRIES="$AD_JSON_ENTRIES,"
@@ -108,7 +137,7 @@ for IMAGE in "$OUTPUT_DIR"/bg_ss*.png; do
                         \"state\": \"default\",
                         \"id\": 0,
                         \"creative\": \"screensvr.png\",
-                        \"img-location\": { \"x\": 0, \"width\": 600, \"y\": 0, \"height\": 800 },
+                        \"img-location\": { \"x\": 0, \"width\": $IMG_W, \"y\": 0, \"height\": $IMG_H },
                         \"img-hotspot\": { \"x\": 0, \"width\": 0, \"y\": 0, \"height\": 0 }
                     }
                 ],
