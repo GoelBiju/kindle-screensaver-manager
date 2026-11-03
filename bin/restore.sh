@@ -1,6 +1,8 @@
 #!/bin/sh
 # Restore original screensavers
 
+. "$(dirname "$0")/common.sh"
+
 BACKUP_DIR="/usr/share/blanket/screensaver_bkp"
 DEST_DIR="/usr/share/blanket/screensaver"
 ADUNITS_BACKUP="/var/local/adunits_bkp"
@@ -20,7 +22,7 @@ if [ -d "$ADUNITS_BACKUP" ] && [ -d "$ASSETS_BACKUP" ]; then
 fi
 
 if [ "$HAS_DEFAULT_BACKUP" = "false" ] && [ "$HAS_AD_BACKUP" = "false" ]; then
-    echo "No backups found!"
+    err "No backups found!"
     exit 1
 fi
 
@@ -32,15 +34,15 @@ if [ -f "$FLAG_FILE" ]; then
     CURRENT_MODE=$(cat "$FLAG_FILE")
 fi
 
-echo "Current mode: $CURRENT_MODE"
+msg "Current mode: $CURRENT_MODE"
 NEEDS_REBOOT=false
 
 # Restore based on current mode
 if [ "$CURRENT_MODE" = "admode" ]; then
-    echo "Restoring ad-mode backups..."
+    msg "Restoring ad-mode backups..."
 
     if [ "$HAS_AD_BACKUP" = "false" ]; then
-        echo "ERROR: No ad-mode backup found!"
+        err "No ad-mode backup found!"
         mntroot ro 2>/dev/null
         exit 1
     fi
@@ -60,13 +62,13 @@ if [ "$CURRENT_MODE" = "admode" ]; then
     # Remove flag
     rm -f "$FLAG_FILE"
 
-    echo "Original ads restored!"
+    msg "Original ads restored!"
     NEEDS_REBOOT=true
 else
-    echo "Restoring default screensavers..."
+    msg "Restoring default screensavers..."
 
     if [ "$HAS_DEFAULT_BACKUP" = "false" ]; then
-        echo "ERROR: No default screensaver backup found!"
+        err "No default screensaver backup found!"
         mntroot ro 2>/dev/null
         exit 1
     fi
@@ -86,11 +88,11 @@ else
     # Remove the backup directory
     rm -rf "$BACKUP_DIR" 2>/dev/null
     
-    echo "Restored default screensavers! ($COUNT images)"
+    msg "Restored default screensavers! ($COUNT images)"
 
     # If device originally had ads, restore them
     if [ "$HAS_AD_BACKUP" = "true" ]; then
-        echo "Restoring to ad-supported mode..."
+        msg "Restoring to ad-supported mode..."
 
         # Restore the ad backups
         mv "$ADUNITS_BACKUP" /var/local/adunits 2>/dev/null
@@ -110,10 +112,10 @@ fi
 mntroot ro 2>/dev/null
 
 if [ "$NEEDS_REBOOT" = "true" ]; then
-    echo "Rebooting to apply changes..."
-    sleep 2
+    msg "Rebooting to apply changes..."
+    sleep 3
     reboot
 else
-    echo "Restore complete!"
+    msg "Restore complete!"
     exit 0
 fi

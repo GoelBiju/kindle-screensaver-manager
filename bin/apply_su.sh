@@ -1,6 +1,8 @@
 #!/bin/sh
 # Apply converted screensavers (swipe to unlock/ad mode)
 
+. "$(dirname "$0")/common.sh"
+
 SCRIPT_DIR="/mnt/us/extensions/screensaver/bin"
 OUTPUT_DIR="/mnt/us/.screensavers_converted"
 ASSETS_DIR="/mnt/us/system/.assets"
@@ -10,41 +12,41 @@ FLAG_FILE="/mnt/us/extensions/screensaver/.mode_flag"
 DB="/var/local/appreg.db"
 
 # Check if ad system exists on this Kindle
-echo "Checking for ad system..."
+msg "Checking for ad system..."
 
 # Check for ad database
 if [ ! -f "$DB" ]; then
-    echo "ERROR: appreg.db not found!"
-    echo "Ad system not available on this Kindle"
+    err "appreg.db not found!"
+    err "Ad system not available on this Kindle"
     exit 1
 fi
 
 # Check if adunit.viewable property exists in database
 AD_PROPERTY=$(sqlite3 "$DB" 'select value from properties where name = "adunit.viewable";' 2>/dev/null)
 if [ -z "$AD_PROPERTY" ]; then
-    echo "ERROR: Ad system not available!"
-    echo "This Kindle does not support ad-mode"
-    echo "Use 'Apply (Default Mode)' instead"
+    err "Ad system not available!"
+    err "This Kindle does not support ad-mode"
+    err "Use 'Book Cover Mode' instead"
     exit 1
 fi
 
 # Check if /var/local/adunits path exists (or can be created)
 if [ ! -d "/var/local/adunits" ] && [ ! -d "/var/local/adunits_bkp" ]; then
-    echo "ERROR: /var/local/adunits never existed!"
-    echo "Ad system not available on this Kindle"
-    echo "Use 'Apply (Default Mode)' instead"
+    err "/var/local/adunits never existed!"
+    err "Ad system not available on this Kindle"
+    err "Use 'Book Cover Mode' instead"
     exit 1
 fi
 
 
 # Run conversion
-echo "Converting images..."
+msg "Converting images..."
 "$SCRIPT_DIR/convert.sh"
 
 # Check for converted images
 if [ $? -ne 0 ] || [ ! -d "$OUTPUT_DIR" ] || [ -z "$(ls -A "$OUTPUT_DIR" 2>/dev/null)" ]; then
-    echo "No converted images!"
-    echo "Run 'Convert Images' first"
+    err "No converted images!"
+    err "Add images to /mnt/us/screensavers/"
     exit 1
 fi
 
@@ -57,13 +59,13 @@ chattr -i "$ADUNITS_DIR" 2>/dev/null
 
 # Backup the current ads (only if backup doesn't exist)
 if [ ! -d "/var/local/adunits_bkp" ]; then
-    echo "Backing up original ads (first time)..."
+    msg "Backing up original ads (first time)..."
     if [ -d "/var/local/adunits" ]; then
         mv /var/local/adunits /var/local/adunits_bkp/ 2>/dev/null
         mv /mnt/us/system/.assets /mnt/us/system/.assets_bkp/ 2>/dev/null
     fi
 else
-    echo "Ad backup already exists, removing current ads..."
+    msg "Ad backup already exists, removing current ads..."
     rm -rf /var/local/adunits 2>/dev/null
     rm -rf /mnt/us/system/.assets 2>/dev/null
 fi
@@ -73,7 +75,7 @@ mkdir -p "$ADUNITS_DIR"
 mkdir -p "$ASSETS_DIR"
 
 # Process the screensavers and convert into assets and ad entries
-echo "Processing screensavers..."
+msg "Processing screensavers..."
 COUNT=0
 AD_JSON_ENTRIES=""
 
@@ -210,7 +212,7 @@ done
 
 
 # Build complete ad manager file
-echo "Creating admgr.json..."
+msg "Creating admgr.json..."
 cat > "$ADUNITS_DIR/admgr.json" << EOF
 {$AD_JSON_ENTRIES
 }
@@ -221,16 +223,17 @@ chattr +i "$ADUNITS_DIR/admgr.json"
 chattr +i "$ADUNITS_DIR"
 
 # Show completion
-echo "Screensavers Applied!"
-echo "Installed: $COUNT images"
+msg "Screensavers Applied!"
+msg "Installed: $COUNT images"
 
 # Ensure we enter ad-mode on reboot
-echo "Enabling ad-mode..."
+msg "Enabling ad-mode..."
 sqlite3 "$DB" 'update properties set value = "true" where name = "adunit.viewable";'
 
 # Set ad-mode flag
 echo "admode" > "$FLAG_FILE"
 
 mntroot ro 2>/dev/null
-sleep 2
+msg "Rebooting..."
+sleep 3
 reboot

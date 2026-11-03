@@ -1,6 +1,8 @@
 #!/bin/sh
 # Convert images to Kindle screensavers
 
+. "$(dirname "$0")/common.sh"
+
 SOURCE_DIR="/mnt/us/screensavers"
 OUTPUT_DIR="/mnt/us/.screensavers_converted"
 FFMPEG_BIN="/mnt/us/extensions/screensaver/bin/ffmpeg"
@@ -10,7 +12,7 @@ FFMPEG_BIN="/mnt/us/extensions/screensaver/bin/ffmpeg"
 # KINDLE_HEIGHT=800
 
 # Auto-detect screen size
-echo "Detecting screen resolution..."
+msg "Detecting screen resolution..."
 
 # Try eips first
 SCREEN_INFO=$(eips -i 2>/dev/null)
@@ -22,7 +24,7 @@ fi
 # Fallback to model detection if eips failed
 # Detect Kindle model and set screen size based on libkh5 logic
 if [ -z "$KINDLE_WIDTH" ] || [ -z "$KINDLE_HEIGHT" ]; then
-    echo "eips detection failed, using model detection..."
+    msg "eips detection failed, using model detection..."
     kmfc="$(cut -c1 /proc/usid)"
     if [ "${kmfc}" == "B" ] || [ "${kmfc}" == "9" ] ; then
         kmodel="$(cut -c3-4 /proc/usid)"
@@ -110,11 +112,11 @@ if [ -z "$KINDLE_WIDTH" ] || [ -z "$KINDLE_HEIGHT" ]; then
         esac
     fi
 
-    echo "Detected Kindle model: ${kmodel}"
+    msg "Detected Kindle model: ${kmodel}"
 fi
 
 
-echo "Screen resolution: ${KINDLE_WIDTH}x${KINDLE_HEIGHT}"
+msg "Screen resolution: ${KINDLE_WIDTH}x${KINDLE_HEIGHT}"
 
 # Create directories
 # mkdir -p "$SOURCE_DIR"
@@ -122,18 +124,18 @@ echo "Screen resolution: ${KINDLE_WIDTH}x${KINDLE_HEIGHT}"
 # Check for source images
 if [ ! -d "$SOURCE_DIR" ] || [ -z "$(ls -A "$SOURCE_DIR" 2>/dev/null)" ]; then
     # kh_msg "No images found in /mnt/us/screensavers/" E v
-    echo "No images found in /mnt/us/screensavers/"
+    err "No images found in /mnt/us/screensavers/"
     # sleep 2
     exit 1
 fi
 
 # Check ffmpeg
 if [ ! -x "$FFMPEG_BIN" ]; then
-    echo "ERROR: ffmpeg missing!"
-    echo "Add to bin/ffmpeg"
+    err "ffmpeg missing!"
+    err "Add to bin/ffmpeg"
     exit 1
 else
-    echo "Ensuring we can execute ffmpeg..."
+    msg "Ensuring we can execute ffmpeg..."
     chmod +x "$FFMPEG_BIN"
 fi
 
@@ -141,7 +143,7 @@ fi
 mkdir -p "$OUTPUT_DIR"
 rm -f "$OUTPUT_DIR"/*
 
-echo "Starting conversions..."
+msg "Starting conversions..."
 
 # Count images
 # TOTAL=$(find "$SOURCE_DIR" -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.gif" -o -iname "*.bmp" \) 2>/dev/null | wc -l)
@@ -165,7 +167,7 @@ for IMAGE in "$SOURCE_DIR"/*.jpg "$SOURCE_DIR"/*.jpeg "$SOURCE_DIR"/*.png "$SOUR
     FILENAME=$(basename "$IMAGE")
     OUTPUT_FILE="$OUTPUT_DIR/bg_ss$(printf "%03d" $PROCESSED).png"
     
-    echo "Converting: $FILENAME"
+    msg "Converting: $FILENAME"
     
     "$FFMPEG_BIN" -i "$IMAGE" \
         -vf "scale=${KINDLE_WIDTH}:${KINDLE_HEIGHT}:force_original_aspect_ratio=increase,crop=${KINDLE_WIDTH}:${KINDLE_HEIGHT},format=gray" \
@@ -176,19 +178,19 @@ for IMAGE in "$SOURCE_DIR"/*.jpg "$SOURCE_DIR"/*.jpeg "$SOURCE_DIR"/*.png "$SOUR
     if [ $? -eq 0 ]; then
         PROCESSED=$((PROCESSED + 1))
     else
-        echo "Failed: $FILENAME"
+        err "Failed: $FILENAME"
     fi
 done
 
 # Check if any images were processed
 if [ $PROCESSED -eq 0 ]; then
-    echo "No images converted!"
+    err "No images converted!"
     exit 1
 fi
 
 # Show completion
-echo "Conversion Complete!"
-echo "Processed: $PROCESSED images"
-echo "Output: $OUTPUT_DIR"
+msg "Conversion Complete!"
+msg "Processed: $PROCESSED images"
+msg "Output: $OUTPUT_DIR"
 
 exit 0

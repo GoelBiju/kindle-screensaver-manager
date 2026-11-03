@@ -469,6 +469,9 @@ kh_msg()
             "linkjail" )
                 kh_eips_tag="J"
             ;;
+            "screensaver" )
+                kh_eips_tag="SS"
+            ;;
             * )
                 # Huh, shouldn't happen, but log it anyway.
                 f_log W ${KH_HACKNAME} libkh5 "" "couldn't detect which eips tag to use for hack '${KH_HACKNAME}'"

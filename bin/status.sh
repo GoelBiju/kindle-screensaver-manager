@@ -1,6 +1,8 @@
 #!/bin/sh
 # Show status
 
+. "$(dirname "$0")/common.sh"
+
 SOURCE_DIR="/mnt/us/screensavers"
 OUTPUT_DIR="/mnt/us/.screensavers_converted"
 FFMPEG_BIN="/mnt/us/extensions/screensaver/bin/ffmpeg"
@@ -16,11 +18,9 @@ else
 fi
 
 # Display status
-# echo "Source: $SOURCE_COUNT images"
-# echo "Converted: $CONVERTED_COUNT images"
-
-# Check ffmpeg status
-# echo "FFmpeg: $FFMPEG_STATUS"
+# TODO: Show the current mode as well
+msg "Converted: $CONVERTED_COUNT images"
+msg "FFmpeg: $FFMPEG_STATUS"
 
 
 # Get current resolution from eips
@@ -34,7 +34,7 @@ KINDLE_HEIGHT=$(echo "$SCREEN_INFO" | grep "yres:" | awk '{print $4}')
 KINDLE_WIDTH=${KINDLE_WIDTH:-600}
 KINDLE_HEIGHT=${KINDLE_HEIGHT:-800}
 
-echo "Detected screen: ${KINDLE_WIDTH}x${KINDLE_HEIGHT}"
+msg "Detected screen: ${KINDLE_WIDTH}x${KINDLE_HEIGHT}"
 # echo "Resolution: 600x800"
 
 exit 0
