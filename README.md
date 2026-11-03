@@ -2,9 +2,14 @@
 
 A KUAL extension for managing custom screensavers on your jailbroken Kindle. Tested on Kindle Basic 4 (KT4) on firmware version `5.18.1`.
 
-## Features
+## Compatibility
 
-...
+- Kindle Basic 10th Generation - KT4 (`5.18.1`)
+- PW4 (?)
+- PW5 (?)
+- KT6 (?)
+
+## Features
 
 - "Swipe to Unlock" your Kindle mode
 - Change default screensavers
@@ -24,7 +29,6 @@ A KUAL extension for managing custom screensavers on your jailbroken Kindle. Tes
 - [ ] book covers on ad-mode/swipe to unlock screen
 - [ ] fix unlocking on ad, scrolls in home page bug
 - [ ] minimise the extra assets and admgr.json entry content
-
 
 ## Installation
 
