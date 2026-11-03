@@ -156,13 +156,22 @@ msg "Starting conversions..."
 
 # echo "Found $TOTAL images"
 
+# Blanket loads two-digit names (bg_ss00.png - bg_ss99.png), so cap at 100
+MAX_IMAGES=100
+
 # Convert images using for loop (not while read)
 PROCESSED=0
+SKIPPED=0
 for IMAGE in "$SOURCE_DIR"/*.jpg "$SOURCE_DIR"/*.jpeg "$SOURCE_DIR"/*.png "$SOURCE_DIR"/*.gif "$SOURCE_DIR"/*.bmp \
              "$SOURCE_DIR"/*.JPG "$SOURCE_DIR"/*.JPEG "$SOURCE_DIR"/*.PNG "$SOURCE_DIR"/*.GIF "$SOURCE_DIR"/*.BMP; do
     
     # Skip if glob didn't match anything
     [ -f "$IMAGE" ] || continue
+
+    if [ $PROCESSED -ge $MAX_IMAGES ]; then
+        SKIPPED=$((SKIPPED + 1))
+        continue
+    fi
     
     FILENAME=$(basename "$IMAGE")
     OUTPUT_FILE="$OUTPUT_DIR/bg_ss$(printf "%02d" $PROCESSED).png"
@@ -179,8 +188,13 @@ for IMAGE in "$SOURCE_DIR"/*.jpg "$SOURCE_DIR"/*.jpeg "$SOURCE_DIR"/*.png "$SOUR
         PROCESSED=$((PROCESSED + 1))
     else
         err "Failed: $FILENAME"
+        rm -f "$OUTPUT_FILE"
     fi
 done
+
+if [ $SKIPPED -gt 0 ]; then
+    warn "Max $MAX_IMAGES images, skipped $SKIPPED"
+fi
 
 # Check if any images were processed
 if [ $PROCESSED -eq 0 ]; then
