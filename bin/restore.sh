@@ -94,6 +94,13 @@ else
     if [ "$HAS_AD_BACKUP" = "true" ]; then
         msg "Restoring to ad-supported mode..."
 
+        # Remove any leftover (possibly locked) custom ads first,
+        # otherwise mv nests the backup inside the existing folder
+        chattr -i /var/local/adunits/admgr.json 2>/dev/null
+        chattr -i /var/local/adunits 2>/dev/null
+        rm -rf /var/local/adunits 2>/dev/null
+        rm -rf /mnt/us/system/.assets 2>/dev/null
+
         # Restore the ad backups
         mv "$ADUNITS_BACKUP" /var/local/adunits 2>/dev/null
         mv "$ASSETS_BACKUP" /mnt/us/system/.assets 2>/dev/null
