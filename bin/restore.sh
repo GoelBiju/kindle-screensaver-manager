@@ -1,122 +1,58 @@
 #!/bin/sh
-# Restore original screensavers
+# Restore original screensavers, ads and ad setting
+#
+# Undoes every mode that has been applied, whatever order they were applied in.
 
 . "$(dirname "$0")/common.sh"
+. "$(dirname "$0")/backup.sh"
 
-BACKUP_DIR="/usr/share/blanket/screensaver_bkp"
-DEST_DIR="/usr/share/blanket/screensaver"
-ADUNITS_BACKUP="/var/local/adunits_bkp"
-ASSETS_BACKUP="/mnt/us/system/.assets_bkp"
 FLAG_FILE="/mnt/us/extensions/screensaver/.mode_flag"
 
-# Check if we have any backups
-HAS_DEFAULT_BACKUP=false
-HAS_AD_BACKUP=false
-
-if [ -d "$BACKUP_DIR" ] && [ -n "$(ls -A "$BACKUP_DIR" 2>/dev/null)" ]; then
-    HAS_DEFAULT_BACKUP=true
-fi
-
-if [ -d "$ADUNITS_BACKUP" ] && [ -d "$ASSETS_BACKUP" ]; then
-    HAS_AD_BACKUP=true
-fi
-
-if [ "$HAS_DEFAULT_BACKUP" = "false" ] && [ "$HAS_AD_BACKUP" = "false" ]; then
+if ! blanket_backed_up && ! ads_backed_up && [ ! -f "$STATE_AD_VIEWABLE" ]; then
     err "No backups found!"
+    err "Nothing to restore"
     exit 1
 fi
 
 mntroot rw 2>/dev/null
 
-# Check what mode we're currently in
-CURRENT_MODE="default"
-if [ -f "$FLAG_FILE" ]; then
-    CURRENT_MODE=$(cat "$FLAG_FILE")
-fi
-
-msg "Current mode: $CURRENT_MODE"
+FAILED=false
 NEEDS_REBOOT=false
 
-# Restore based on current mode
-if [ "$CURRENT_MODE" = "admode" ]; then
-    msg "Restoring ad-mode backups..."
+# Backups made before the original ad setting was recorded: fill it in
+# now (assumes ads were on if an ad backup exists) so it gets restored.
+save_ad_viewable
 
-    if [ "$HAS_AD_BACKUP" = "false" ]; then
-        err "No ad-mode backup found!"
-        mntroot ro 2>/dev/null
-        exit 1
-    fi
+# Book cover mode: default screensavers
+restore_blanket
+case $? in
+    0) msg "Restored default screensavers" ;;
+    1) err "Failed to restore default screensavers!"; FAILED=true ;;
+esac
 
-    # Unlock ad manager
-    chattr -i /var/local/adunits/admgr.json 2>/dev/null
-    chattr -i /var/local/adunits 2>/dev/null
+# Swipe unlock mode (or book cover mode on an ad device): original ads
+restore_ads
+case $? in
+    0) msg "Restored original ads"; NEEDS_REBOOT=true ;;
+    1) err "Failed to restore original ads!"; FAILED=true ;;
+esac
 
-    # Remove custom screensavers
-    rm -rf /var/local/adunits 2>/dev/null
-    rm -rf /mnt/us/system/.assets 2>/dev/null
-
-    # Restore original ads
-    mv "$ADUNITS_BACKUP" /var/local/adunits 2>/dev/null
-    mv "$ASSETS_BACKUP" /mnt/us/system/.assets 2>/dev/null
-
-    # Remove flag
-    rm -f "$FLAG_FILE"
-
-    msg "Original ads restored!"
-    NEEDS_REBOOT=true
-else
-    msg "Restoring default screensavers..."
-
-    if [ "$HAS_DEFAULT_BACKUP" = "false" ]; then
-        err "No default screensaver backup found!"
-        mntroot ro 2>/dev/null
-        exit 1
-    fi
-
-    # Clear current contents of DEST_DIR (default screensavers)
-    rm -rf "$DEST_DIR"/* 2>/dev/null
-
-    # Restore files
-    COUNT=0
-    for IMAGE in "$BACKUP_DIR"/*; do
-        if [ -f "$IMAGE" ]; then
-            FILENAME=$(basename "$IMAGE")
-            cp "$IMAGE" "$DEST_DIR/$FILENAME" 2>/dev/null && COUNT=$((COUNT + 1))
-        fi
-    done
-
-    # Remove the backup directory
-    rm -rf "$BACKUP_DIR" 2>/dev/null
-    
-    msg "Restored default screensavers! ($COUNT images)"
-
-    # If device originally had ads, restore them
-    if [ "$HAS_AD_BACKUP" = "true" ]; then
-        msg "Restoring to ad-supported mode..."
-
-        # Remove any leftover (possibly locked) custom ads first,
-        # otherwise mv nests the backup inside the existing folder
-        chattr -i /var/local/adunits/admgr.json 2>/dev/null
-        chattr -i /var/local/adunits 2>/dev/null
-        rm -rf /var/local/adunits 2>/dev/null
-        rm -rf /mnt/us/system/.assets 2>/dev/null
-
-        # Restore the ad backups
-        mv "$ADUNITS_BACKUP" /var/local/adunits 2>/dev/null
-        mv "$ASSETS_BACKUP" /mnt/us/system/.assets 2>/dev/null
-        
-        # Enable ads
-        DB="/var/local/appreg.db"
-        sqlite3 "$DB" 'update properties set value = "true" where name = "adunit.viewable";'
-        
+# Original ad on/off setting
+if [ "$FAILED" = "false" ]; then
+    if restore_ad_viewable; then
+        msg "Restored ad setting ($(get_ad_viewable))"
         NEEDS_REBOOT=true
     fi
-
-    # Remove flag
     rm -f "$FLAG_FILE"
+    rmdir "$STATE_DIR" 2>/dev/null
 fi
 
 mntroot ro 2>/dev/null
+
+if [ "$FAILED" = "true" ]; then
+    err "Restore incomplete, backups kept"
+    exit 1
+fi
 
 if [ "$NEEDS_REBOOT" = "true" ]; then
     msg "Rebooting to apply changes..."

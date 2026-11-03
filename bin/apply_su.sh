@@ -2,14 +2,12 @@
 # Apply converted screensavers (swipe to unlock/ad mode)
 
 . "$(dirname "$0")/common.sh"
+. "$(dirname "$0")/backup.sh"
 
 SCRIPT_DIR="/mnt/us/extensions/screensaver/bin"
 OUTPUT_DIR="/mnt/us/.screensavers_converted"
-ASSETS_DIR="/mnt/us/system/.assets"
-ADUNITS_DIR="/var/local/adunits"
 RESOURCES_DIR="/mnt/us/extensions/screensaver/resources"
 FLAG_FILE="/mnt/us/extensions/screensaver/.mode_flag"
-DB="/var/local/appreg.db"
 
 # Check if ad system exists on this Kindle
 msg "Checking for ad system..."
@@ -22,7 +20,7 @@ if [ ! -f "$DB" ]; then
 fi
 
 # Check if adunit.viewable property exists in database
-AD_PROPERTY=$(sqlite3 "$DB" 'select value from properties where name = "adunit.viewable";' 2>/dev/null)
+AD_PROPERTY=$(get_ad_viewable)
 if [ -z "$AD_PROPERTY" ]; then
     err "Ad system not available!"
     err "This Kindle does not support ad-mode"
@@ -31,7 +29,7 @@ if [ -z "$AD_PROPERTY" ]; then
 fi
 
 # Check if /var/local/adunits path exists (or can be created)
-if [ ! -d "/var/local/adunits" ] && [ ! -d "/var/local/adunits_bkp" ]; then
+if [ ! -d "$ADUNITS_DIR" ] && ! ads_backed_up; then
     err "/var/local/adunits never existed!"
     err "Ad system not available on this Kindle"
     err "Use 'Book Cover Mode' instead"
@@ -52,23 +50,16 @@ fi
 
 mntroot rw 2>/dev/null
 
-# Unlock application registry 
-# (just in the event if it was already locked)
-chattr -i "$ADUNITS_DIR/admgr.json" 2>/dev/null
-chattr -i "$ADUNITS_DIR" 2>/dev/null
-
-# Backup the current ads (only if backup doesn't exist)
-if [ ! -d "/var/local/adunits_bkp" ]; then
-    msg "Backing up original ads (first time)..."
-    if [ -d "/var/local/adunits" ]; then
-        mv /var/local/adunits /var/local/adunits_bkp/ 2>/dev/null
-        mv /mnt/us/system/.assets /mnt/us/system/.assets_bkp/ 2>/dev/null
-    fi
-else
-    msg "Ad backup already exists, removing current ads..."
-    rm -rf /var/local/adunits 2>/dev/null
-    rm -rf /mnt/us/system/.assets 2>/dev/null
+# Remember the original ad setting and back up the original ads (first time only)
+save_ad_viewable
+if ! backup_ads; then
+    err "Backup of original ads failed!"
+    mntroot ro 2>/dev/null
+    exit 1
 fi
+
+# Anything left in the ad folders now is ours from a previous run
+remove_custom_ads
 
 # Create the new directories
 mkdir -p "$ADUNITS_DIR"
@@ -228,7 +219,7 @@ msg "Installed: $COUNT images"
 
 # Ensure we enter ad-mode on reboot
 msg "Enabling ad-mode..."
-sqlite3 "$DB" 'update properties set value = "true" where name = "adunit.viewable";'
+set_ad_viewable "true"
 
 # Set ad-mode flag
 echo "admode" > "$FLAG_FILE"

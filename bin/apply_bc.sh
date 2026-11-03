@@ -2,14 +2,13 @@
 # Apply converted screensavers (book cover mode/non-ad mode)
 
 . "$(dirname "$0")/common.sh"
+. "$(dirname "$0")/backup.sh"
 
 SCRIPT_DIR="/mnt/us/extensions/screensaver/bin"
 OUTPUT_DIR="/mnt/us/.screensavers_converted"
-BACKUP_DIR="/usr/share/blanket/screensaver_bkp"
-DEST_DIR="/usr/share/blanket/screensaver"
+BACKUP_DIR="$BLANKET_BACKUP"
+DEST_DIR="$BLANKET_DIR"
 FLAG_FILE="/mnt/us/extensions/screensaver/.mode_flag"
-ADUNITS_DIR="/var/local/adunits"
-ASSETS_DIR="/mnt/us/system/.assets"
 
 # Check if blanket screensaver folder exists
 if [ ! -d "$DEST_DIR" ]; then
@@ -38,15 +37,11 @@ if ! touch "$DEST_DIR/.rw_test" 2>/dev/null; then
 fi
 rm -f "$DEST_DIR/.rw_test"
 
-# Backup default screensavers (only if backup doesn't exist)
-if [ ! -d "$BACKUP_DIR" ] || [ -z "$(ls -A "$BACKUP_DIR" 2>/dev/null)" ]; then
-    msg "Backing up original screensavers (first time)..."
-    mkdir -p "$BACKUP_DIR"
-    if ! cp -p "$DEST_DIR"/* "$BACKUP_DIR/"; then
-        err "Backup of default screensavers failed!"
-        mntroot ro 2>/dev/null
-        exit 1
-    fi
+# Backup default screensavers (first time only)
+if ! backup_blanket; then
+    err "Backup of default screensavers failed!"
+    mntroot ro 2>/dev/null
+    exit 1
 fi
 
 # Unload the screensaver module while we swap files, so blanket
@@ -83,32 +78,21 @@ msg "Installed: $COUNT images"
 
 # Check if we are in ad-mode or not
 msg "Checking ad-mode..."
-DB="/var/local/appreg.db"
-STATE=$(sqlite3 "$DB" 'select value from properties where name = "adunit.viewable";')
-
-NEEDS_REBOOT=false
+STATE=$(get_ad_viewable)
 
 if [ "$STATE" = "true" ]; then
-    # Unlock
-    chattr -i "$ADUNITS_DIR/admgr.json" 2>/dev/null
-    chattr -i "$ADUNITS_DIR" 2>/dev/null
-
-    # Backup ads (only if backup doesn't exist)
-    if [ ! -d "/var/local/adunits_bkp" ]; then
-        msg "Ads are currently ENABLED."
-        msg "Backing up original ads (first time)..."
-        mv "$ADUNITS_DIR" /var/local/adunits_bkp 2>/dev/null
-        mv "$ASSETS_DIR" /mnt/us/system/.assets_bkp 2>/dev/null
-    else
-        msg "Ads are currently ENABLED."
-        msg "Ad backup already exists, removing current ads..."
-        rm -rf "$ADUNITS_DIR" 2>/dev/null
-        rm -rf "$ASSETS_DIR" 2>/dev/null
+    msg "Ads are currently ENABLED, disabling..."
+    save_ad_viewable
+    if ! backup_ads; then
+        err "Backup of original ads failed!"
+        mntroot ro 2>/dev/null
+        exit 1
     fi
-
-    msg "Updating appreg.db..."
-    sqlite3 "$DB" 'update properties set value = "false" where name = "adunit.viewable";'
-    NEEDS_REBOOT=true
+    remove_custom_ads
+    set_ad_viewable "false"
+elif ads_backed_up; then
+    # Ads already off, but swipe mode may have left its locked files behind
+    remove_custom_ads
 fi
 
 # Set mode flag
