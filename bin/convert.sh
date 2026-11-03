@@ -165,7 +165,7 @@ for IMAGE in "$SOURCE_DIR"/*.jpg "$SOURCE_DIR"/*.jpeg "$SOURCE_DIR"/*.png "$SOUR
     [ -f "$IMAGE" ] || continue
     
     FILENAME=$(basename "$IMAGE")
-    OUTPUT_FILE="$OUTPUT_DIR/bg_ss$(printf "%03d" $PROCESSED).png"
+    OUTPUT_FILE="$OUTPUT_DIR/bg_ss$(printf "%02d" $PROCESSED).png"
     
     msg "Converting: $FILENAME"
     
