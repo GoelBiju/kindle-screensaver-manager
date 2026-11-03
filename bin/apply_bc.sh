@@ -8,6 +8,8 @@ OUTPUT_DIR="/mnt/us/.screensavers_converted"
 BACKUP_DIR="/usr/share/blanket/screensaver_bkp"
 DEST_DIR="/usr/share/blanket/screensaver"
 FLAG_FILE="/mnt/us/extensions/screensaver/.mode_flag"
+ADUNITS_DIR="/var/local/adunits"
+ASSETS_DIR="/mnt/us/system/.assets"
 
 # Check if blanket screensaver folder exists
 if [ ! -d "$DEST_DIR" ]; then
@@ -27,18 +29,32 @@ if [ $? -ne 0 ] || [ ! -d "$OUTPUT_DIR" ] || [ -z "$(ls -A "$OUTPUT_DIR" 2>/dev/
     exit 1
 fi
 
+# The blanket folder lives on the (normally read-only) root filesystem
+mntroot rw 2>/dev/null
+if ! touch "$DEST_DIR/.rw_test" 2>/dev/null; then
+    err "Root filesystem is read-only!"
+    err "Could not run 'mntroot rw'"
+    exit 1
+fi
+rm -f "$DEST_DIR/.rw_test"
+
 # Backup default screensavers (only if backup doesn't exist)
 if [ ! -d "$BACKUP_DIR" ] || [ -z "$(ls -A "$BACKUP_DIR" 2>/dev/null)" ]; then
     msg "Backing up original screensavers (first time)..."
     mkdir -p "$BACKUP_DIR"
-    cp -p "$DEST_DIR"/* "$BACKUP_DIR/" 2>/dev/null
+    if ! cp -p "$DEST_DIR"/* "$BACKUP_DIR/"; then
+        err "Backup of default screensavers failed!"
+        mntroot ro 2>/dev/null
+        exit 1
+    fi
 fi
 
-# TODO: Should we do a reboot or unload of screensaver as we are removing existing screensavers,
-#       can cause the blanket service to crash
+# Unload the screensaver module while we swap files, so blanket
+# doesn't try to read a half-empty folder
+lipc-set-prop com.lab126.blanket unload screensaver 2>/dev/null
 
 # Clear current contents of DEST_DIR (default screensavers)
-rm -r "$DEST_DIR"/*
+rm -rf "$DEST_DIR"/*
 
 # Copy files
 msg "Copying files..."
@@ -46,9 +62,20 @@ COUNT=0
 for IMAGE in "$OUTPUT_DIR"/*; do
     if [ -f "$IMAGE" ]; then
         FILENAME=$(basename "$IMAGE")
-        cp "$IMAGE" "$DEST_DIR/$FILENAME" 2>/dev/null && COUNT=$((COUNT + 1))
+        cp "$IMAGE" "$DEST_DIR/$FILENAME" && COUNT=$((COUNT + 1))
     fi
 done
+
+if [ $COUNT -eq 0 ]; then
+    err "Copy failed! Putting defaults back..."
+    cp -p "$BACKUP_DIR"/* "$DEST_DIR/" 2>/dev/null
+    lipc-set-prop com.lab126.blanket load screensaver 2>/dev/null
+    mntroot ro 2>/dev/null
+    exit 1
+fi
+
+# Reload the screensaver module so it picks up the new images
+lipc-set-prop com.lab126.blanket load screensaver 2>/dev/null
 
 # Show completion
 msg "Screensavers Applied!"
@@ -70,13 +97,13 @@ if [ "$STATE" = "true" ]; then
     if [ ! -d "/var/local/adunits_bkp" ]; then
         msg "Ads are currently ENABLED."
         msg "Backing up original ads (first time)..."
-        mv /var/local/adunits /var/local/adunits_bkp/ 2>/dev/null
-        mv /mnt/us/system/.assets /mnt/us/system/.assets_bkp/ 2>/dev/null
+        mv "$ADUNITS_DIR" /var/local/adunits_bkp 2>/dev/null
+        mv "$ASSETS_DIR" /mnt/us/system/.assets_bkp 2>/dev/null
     else
         msg "Ads are currently ENABLED."
         msg "Ad backup already exists, removing current ads..."
-        rm -rf /var/local/adunits 2>/dev/null
-        rm -rf /mnt/us/system/.assets 2>/dev/null
+        rm -rf "$ADUNITS_DIR" 2>/dev/null
+        rm -rf "$ASSETS_DIR" 2>/dev/null
     fi
 
     msg "Updating appreg.db..."
